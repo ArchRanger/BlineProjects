@@ -32,9 +32,9 @@ GPIO.output(in3, GPIO.LOW)
 GPIO.output(in4, GPIO.LOW)
 
 # PID parametreleri
-Kp = 0.5
+Kp = 0.7
 Ki = 0.0
-Kd = 0.0
+Kd = 0.1
 
 # PID değişkenleri
 last_error = 0
