@@ -31,6 +31,15 @@ GPIO.output(in2, GPIO.LOW)
 GPIO.output(in3, GPIO.LOW)
 GPIO.output(in4, GPIO.LOW)
 
+# PID parametreleri
+Kp = 0.5
+Ki = 0.0
+Kd = 0.0
+
+# PID değişkenleri
+last_error = 0
+integral = 0
+
 def main():
     camera = PiCamera()
     camera.resolution = (640, 360)
@@ -150,28 +159,49 @@ def display_line(image, blackbox):
     cv2.line(image, (int(x_min), 200), (int(x_min), 250), (255, 0, 0), 3)
 
 def control_motors(image, blackbox):
+    global last_error, integral
+
     (x_min, _), (_, _), _ = blackbox
     error = x_min - 320
-    if abs(error) < 90:
-        GPIO.output(in1, GPIO.LOW)
-        GPIO.output(in2, GPIO.HIGH)
-        GPIO.output(in3, GPIO.LOW)
-        GPIO.output(in4, GPIO.HIGH)
-    elif error > 90:
-        GPIO.output(in1, GPIO.HIGH)
-        GPIO.output(in2, GPIO.LOW)
-        GPIO.output(in3, GPIO.LOW)
-        GPIO.output(in4, GPIO.HIGH)
-    elif error < -90:
+
+    # PID hesaplama
+    P = Kp * error
+    I = Ki * integral
+    D = Kd * (error - last_error)
+
+    pid_output = P + I + D
+
+    # PID çıkışını sınırlama
+    pid_output = max(min(pid_output, 100), -100)
+
+    # PID çıkışını motor hızına dönüştürme
+    motor_speed = abs(pid_output)
+
+    if error < -90:  # Eğer hata negatif ise sola dön
         GPIO.output(in1, GPIO.LOW)
         GPIO.output(in2, GPIO.HIGH)
         GPIO.output(in3, GPIO.HIGH)
         GPIO.output(in4, GPIO.LOW)
-    else:
-        GPIO.output(in1, GPIO.LOW)
+        p1.ChangeDutyCycle(motor_speed)
+        p2.ChangeDutyCycle(motor_speed)
+    elif error > 90:  # Eğer hata pozitif ise sağa dön
+        GPIO.output(in1, GPIO.HIGH)
         GPIO.output(in2, GPIO.LOW)
         GPIO.output(in3, GPIO.LOW)
-        GPIO.output(in4, GPIO.LOW)
+        GPIO.output(in4, GPIO.HIGH)
+        p1.ChangeDutyCycle(motor_speed)
+        p2.ChangeDutyCycle(motor_speed)
+    else:  # Eğer hata belirtilen aralıkta ise ileri git
+        GPIO.output(in1, GPIO.LOW)
+        GPIO.output(in2, GPIO.HIGH)
+        GPIO.output(in3, GPIO.LOW)
+        GPIO.output(in4, GPIO.HIGH)
+        p1.ChangeDutyCycle(50)  # Sabit bir hız
+        p2.ChangeDutyCycle(50)  # Sabit bir hız
+
+    # PID değişkenlerini güncelleme
+    last_error = error
+    integral += error
 
 if __name__ == "__main__":
     main()
