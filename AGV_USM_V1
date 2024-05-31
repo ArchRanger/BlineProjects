@@ -23,9 +23,9 @@ last_error = 0
 integral = 0
 
 camera = PiCamera()
-camera.resolution = (640, 360)
+camera.resolution = (320, 240)  # Çözünürlüğü düşürdük
 camera.rotation = -90
-rawCapture = PiRGBArray(camera, size=(640, 360))
+rawCapture = PiRGBArray(camera, size=(320, 240))
 time.sleep(0.1)
 
 x_last = 320
@@ -94,7 +94,7 @@ def handle_multiple_contours(contours_blk, contours_blk_len, x_last, y_last):
     for con_num in range(contours_blk_len):
         blackbox = cv2.minAreaRect(contours_blk[con_num])
         (x_min, y_min), _, _ = blackbox
-        if y_min > 358:
+        if y_min > 238:  # Değiştirildi
             off_bottom += 1
         canditates.append((y_min, con_num, x_min, y_min))
     canditates = sorted(canditates)
@@ -123,7 +123,7 @@ def draw_blackbox(image, blackbox):
 def display_angle_and_error(image, blackbox, x_min, w_min, h_min):
     (_, _), (_, _), ang = blackbox
     ang = handle_angle(ang, w_min, h_min)
-    error = int(x_min - 320)
+    error = int(x_min - 160)  # Değiştirildi
     cv2.putText(image, str(ang), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
     cv2.putText(image, str(error), (10, 320), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
@@ -138,13 +138,13 @@ def handle_angle(ang, w_min, h_min):
 
 def display_line(image, blackbox):
     (x_min, _), (_, _), _ = blackbox
-    cv2.line(image, (int(x_min), 200), (int(x_min), 250), (255, 0, 0), 3)
+    cv2.line(image, (int(x_min), 100), (int(x_min), 125), (255, 0, 0), 3)  # Değiştirildi
 
 def control_motors(image, blackbox):
     global last_error, integral
 
     (x_min, _), (_, _), _ = blackbox
-    error = x_min - 320
+    error = x_min - 160  # Değiştirildi
 
     # PID hesaplama
     P = Kp * error
@@ -156,9 +156,9 @@ def control_motors(image, blackbox):
     # PID çıkışını sınırlama
     pid_output = max(min(pid_output, 100), -100)
 
-    if error < -90:  # Eğer hata negatif ise sola dön
+    if error < -45:  # Eğer hata negatif ise sola dön
         send_command_to_arduino(3)  # Sola dön komutu
-    elif error > 90:  # Eğer hata pozitif ise sağa dön
+    elif error > 45:  # Eğer hata pozitif ise sağa dön
         send_command_to_arduino(2)  # Sağa dön komutu
     else:  # Eğer hata belirtilen aralıkta ise ileri git
         send_command_to_arduino(1)  # İleri git komutu
